@@ -5,10 +5,12 @@ import os
 import subprocess
 import zipfile
 import shortuuid
+import psycopg2
 
 ######################################################################
 ## Configs
 PORT = int(os.environ.get("PORT", 5001))
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 ALLOWED_EXTENSIONS = set(['zip'])
 
@@ -22,14 +24,41 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+def dump_all(conn):
+    cur = conn.cursor()
+    
+    cur.execute("SELECT id, count, created_at as when FROM Counts")
+    
+    for iden, count, when in cur.fetchall() :
+        print iden, count, when
+
+def insert_count(conn, iden, count):
+    cur = conn.cursor()
+    cur.execute("""
+         INSERT INTO counts(id, count, created_at) 
+         VALUES (%s, %s, NOW()) 
+         ON CONFLICT (id) DO UPDATE
+         SET count = %s, created_at=NOW()
+         WHERE counts.id = %s
+    """ % (iden, count, count, iden))
+    conn.commit()
+                
+######################################################################
+## Initialize
+
+conn = psycopg2.connect(DATABASE_URL)
+dump_all(conn)
+
+# make sure folders exists
 for d in [app.config['UPLOAD_FOLDER'], app.config['WS_FOLDER']]:
     if not os.path.exists(d):
         os.makedirs(d)
 
+        
 ######################################################################
 ## Routes
-@app.route("/upload", methods=['GET', 'POST'])
-def index():
+@app.route("/upload/<iden>", methods=['GET', 'POST'])
+def upload_handler(iden):
 
     # TODO for debugging, remove later
     if request.method != 'POST':
@@ -66,6 +95,11 @@ def index():
     out, err = s.communicate()
 
     count = out.count('\n')
+
+    # Save to DB
+    print(iden, count)
+    print()
+    insert_count(conn, iden, count)
 
     print count
     print out
