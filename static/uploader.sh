@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DIR=$1
+ID=$1
+DIR=$2
 
 if [ ! -d "$DIR" ] && [ ! -f "$DIR" ]; then
     echo "$DIR not found";
@@ -10,5 +11,5 @@ fi
 echo $DIR
 zip -r src.zip $DIR
 
-curl -F file=@src.zip https://clear-ci.herokuapp.com/upload
+curl -F file=@src.zip https://clear-ci.herokuapp.com/upload/$1
 
