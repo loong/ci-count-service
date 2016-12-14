@@ -26,11 +26,16 @@ def allowed_file(filename):
 
 def dump_all(conn):
     cur = conn.cursor()
-    
     cur.execute("SELECT id, count, created_at as when FROM Counts")
     
-    for iden, count, when in cur.fetchall() :
+    for iden, count, when in cur.fetchall():
         print iden, count, when
+
+def get_count(conn, iden):
+    cur = conn.cursor()
+    cur.execute("SELECT count FROM Counts WHERE id = %s" % iden)
+    
+    return cur.fetchone()
 
 def insert_count(conn, iden, count):
     cur = conn.cursor()
@@ -47,7 +52,7 @@ def insert_count(conn, iden, count):
 ## Initialize
 
 conn = psycopg2.connect(DATABASE_URL)
-dump_all(conn)
+# dump_all(conn)
 
 # make sure folders exists
 for d in [app.config['UPLOAD_FOLDER'], app.config['WS_FOLDER']]:
@@ -97,14 +102,17 @@ def upload_handler(iden):
     count = out.count('\n')
 
     # Save to DB
-    print(iden, count)
-    print()
     insert_count(conn, iden, count)
 
     print count
     print out
     
     return str(count) + '\n' + out
+
+@app.route('/badges/<iden>.png')
+def get_count_handler(iden):
+    count = get_count(conn, iden)
+    return redirect("https://img.shields.io/badge/TODOs-"+str(count)+"-brightgreen.svg?style=flat", code=302)
 
 @app.route('/static/<path:path>')
 def serve_static(path):
