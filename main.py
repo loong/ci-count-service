@@ -8,6 +8,8 @@ import shortuuid
 
 ######################################################################
 ## Configs
+PORT = int(os.environ.get("PORT", 5001))
+
 ALLOWED_EXTENSIONS = set(['zip'])
 
 app = Flask(__name__)
@@ -19,6 +21,10 @@ app.config['WS_FOLDER'] = './workspaces'
 def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+for d in [app.config['UPLOAD_FOLDER'], app.config['WS_FOLDER']]:
+    if not os.path.exists(d):
+        os.makedirs(d)
 
 ######################################################################
 ## Routes
@@ -63,4 +69,4 @@ def index():
     return out
             
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=PORT, debug=True)
