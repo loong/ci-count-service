@@ -28,7 +28,7 @@ for d in [app.config['UPLOAD_FOLDER'], app.config['WS_FOLDER']]:
 
 ######################################################################
 ## Routes
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/upload", methods=['GET', 'POST'])
 def index():
 
     # TODO for debugging, remove later
@@ -61,12 +61,16 @@ def index():
     zip_ref.extractall(toFolder)
     zip_ref.close()
 
-    # Find TODO references
-    s = subprocess.Popen(("grep", "-r", "TODO", "."), stdout = subprocess.PIPE, cwd=toFolder)
+    # Find todo references
+    s = subprocess.Popen(("grep", "-r", "-n", "TODO", "."), stdout = subprocess.PIPE, cwd=toFolder)
     out, err = s.communicate()
-    
+
+    count = out.count('\n')
+
+    print count
     print out
-    return out
+    
+    return str(count) + '\n' + out
             
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=PORT, debug=True)
