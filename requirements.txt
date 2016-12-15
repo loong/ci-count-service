@@ -1,4 +1,5 @@
 Flask==0.10.1
 psycopg2==2.6.2
+requests==2.10.0
 shortuuid==0.4.3
 Werkzeug==0.11.11

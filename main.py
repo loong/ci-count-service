@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for, Response
 from werkzeug import secure_filename
 
 import os
@@ -6,6 +6,7 @@ import subprocess
 import zipfile
 import shortuuid
 import psycopg2
+import requests
 
 ######################################################################
 ## Configs
@@ -35,7 +36,7 @@ def get_count(conn, iden):
     cur = conn.cursor()
     cur.execute("SELECT count FROM Counts WHERE id = %s" % iden)
     
-    return cur.fetchone()
+    return cur.fetchone()[0]
 
 def insert_count(conn, iden, count):
     cur = conn.cursor()
@@ -109,10 +110,16 @@ def upload_handler(iden):
     
     return str(count) + '\n' + out
 
-@app.route('/badges/<iden>.png')
+@app.route('/badges/id/<iden>.png')
 def get_count_handler(iden):
     count = get_count(conn, iden)
-    return redirect("https://img.shields.io/badge/TODOs-"+str(count)+"-brightgreen.svg?style=flat", code=302)
+    url = "https://img.shields.io/badge/TODOs-"+str(count)+"-brightgreen.svg?style=flat"
+
+    img = requests.get(url, stream=True , params = request.args)
+
+    headers = {"Content-Type": "image/svg+xml;charset=utf-8"}
+    resp = Response(img, headers=headers)
+    return resp
 
 @app.route('/static/<path:path>')
 def serve_static(path):
